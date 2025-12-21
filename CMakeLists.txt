@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(udo VERSION 2.0.2
-        DESCRIPTION "µDo! 2.0.2-rc1 - A minimalist, command-driven web browser by Tintin (github.com/Woofson/udo)"
+        DESCRIPTION "µDo! 2.0.2 - A minimalist, command-driven web browser by Tintin (github.com/Woofson/udo)"
         LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
