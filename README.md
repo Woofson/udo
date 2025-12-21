@@ -51,3 +51,48 @@ All of these are configurable in the config.
 
 See the example config.json for more details.  
 µDo! can also be started with --configdir= for different config profiles.
+
+## Build Dependencies
+
+To build µDo!, you will need the following dependencies:
+- A C++20 compliant compiler (e.g., g++)
+- CMake (version 3.16 or higher)
+- Qt 6 (version 6.2 or higher)
+  - Core
+  - Gui
+  - Widgets
+  - WebEngineCore
+  - WebEngineWidgets
+
+On a Debian-based Linux distribution (like Ubuntu), you can install these with:
+```bash
+sudo apt-get update
+sudo apt-get install build-essential cmake qt6-base-dev qt6-webengine-dev
+```
+
+## Build Instructions
+
+1. Clone the repository.
+2. Navigate to the project directory.
+3. Create a build directory and move into it:
+   ```bash
+   mkdir build && cd build
+   ```
+4. Run CMake to configure the project:
+   ```bash
+   cmake ..
+   ```
+5. Compile the project:
+   ```bash
+   make
+   ```
+
+## Running the Browser
+
+After a successful build, the executable will be located in the `build` directory.
+
+```bash
+./build/udo
+```
+
+On the first run, the browser will create a configuration directory at `~/.config/udo/` and copy the default `config.json` there. You can customize the browser's behavior by editing this file.
