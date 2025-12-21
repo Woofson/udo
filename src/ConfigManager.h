@@ -4,8 +4,9 @@
 #include <QString>
 #include <QJsonObject>
 #include <QVariantMap>
-#include <QStandardPaths> // For standard path locations
-#include <QDir>           // For directory operations
+#include <QStandardPaths>
+#include <QDir>
+#include <QStringList>
 
 class ConfigManager
 {
@@ -20,13 +21,21 @@ public:
     QJsonObject tripleBangs() const;
     QJsonObject shortcuts() const;
     bool statusBarVisibleByDefault() const;
+    bool tabBarVisibleByDefault() const;
+    QString tabBarPosition() const;
     QString clockFormat() const;
     QString downloadsPath() const;
     bool prioritizeHttps() const;
-    QStringList chromiumFlags() const; // Re-add chromiumFlags getter
+    QStringList chromiumFlags() const;
     QString configFilePath() const;
 
-    static void setCustomConfigPath(const QString &path); // Re-add static setter
+    // Modular Theme Getters
+    QJsonObject getThemeModule(const QString &module) const;
+    QString getThemeValue(const QString &module, const QString &key, const QString &defaultValue = "") const;
+    QString getThemeSubValue(const QString &module, const QString &subModule, const QString &key, const QString &defaultValue = "") const;
+    int getThemeInt(const QString &module, const QString &key, int defaultValue = 0) const;
+
+    static void setCustomConfigPath(const QString &path);
 
 private:
     ConfigManager();
@@ -40,7 +49,7 @@ private:
     void copyDefaultConfig() const;
 
     QJsonObject m_config;
-    static QString s_customConfigPath; // Re-add static member
+    static QString s_customConfigPath;
 };
 
 #endif // CONFIGMANAGER_H

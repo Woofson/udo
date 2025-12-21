@@ -1,4 +1,4 @@
-#include <QApplication> // For QApplication::instance()
+#include <QApplication>
 #include "MainWindow.h"
 #include "ConfigManager.h"
 #include "DoBar.h"
@@ -6,9 +6,9 @@
 #include "HelpDialog.h"
 #include "HttpAuthDialog.h"
 #include <QTabWidget>
+#include <QTabBar>
 #include <QWebEngineView>
 #include <QVBoxLayout>
-#include <QTabBar>
 #include <QAction>
 #include <QMenu>
 #include <QWebEnginePage>
@@ -17,12 +17,12 @@
 #include <QLabel>
 #include <QShortcut>
 #include <QMouseEvent>
-#include <QDateTime> // For clock
+#include <QDateTime>
 #include <QWebEngineProfile>
 #include <QWebEngineCookieStore>
 #include <QWebEngineHistory>
-#include <QFileDialog> // For Save As dialog
-#include <QFileInfo>   // For file info
+#include <QFileDialog>
+#include <QFileInfo>
 #include <QAuthenticator>
 
 MainWindow::MainWindow(QWebEngineProfile *profile, const QUrl &initialUrl, QWidget *parent)
@@ -30,12 +30,19 @@ MainWindow::MainWindow(QWebEngineProfile *profile, const QUrl &initialUrl, QWidg
 {
     m_loadProgress = 100;
     setWindowFlags(Qt::FramelessWindowHint);
+    setAttribute(Qt::WA_TranslucentBackground);
 
     m_tabWidget = new QTabWidget(this);
     m_tabWidget->setTabsClosable(true);
     m_tabWidget->setMovable(true);
     m_tabWidget->tabBar()->hide();
     setCentralWidget(m_tabWidget);
+
+    m_standaloneTabBar = new QTabBar(this);
+    m_standaloneTabBar->setTabsClosable(true);
+    m_standaloneTabBar->setMovable(true);
+    m_standaloneTabBar->setExpanding(false);
+    m_standaloneTabBar->setVisible(ConfigManager::instance().tabBarVisibleByDefault());
 
     m_doBarFrame = new QFrame(this);
     m_doBarFrame->setObjectName("doBarFrame");
@@ -66,59 +73,51 @@ MainWindow::MainWindow(QWebEngineProfile *profile, const QUrl &initialUrl, QWidg
         createNewTab(QUrl(ConfigManager::instance().startPage()));
     }
 
-
+    // --- Shortcuts ---
     QJsonObject shortcuts = ConfigManager::instance().shortcuts();
-    for (auto it = shortcuts.begin(); it != shortcuts.end(); ++it) {
-        QString commandName = it.key();
-        QString keySequence = it.value().toString();
-        if (commandName == "toggle_do_bar" || commandName == "toggle_status_bar" || commandName == "about") {
-            continue;
+    auto addShortcut = [&](const QString &key, auto slot) {
+        if (shortcuts.contains(key)) {
+            QShortcut *sc = new QShortcut(QKeySequence(shortcuts[key].toString()), this);
+            connect(sc, &QShortcut::activated, this, slot);
         }
-        QShortcut *shortcut = new QShortcut(QKeySequence(keySequence), this);
-        connect(shortcut, &QShortcut::activated, this, [this, commandName](){
-            handleShortcut(commandName);
-        });
-    }
+    };
 
-    QAction *doBarAction = new QAction(this);
-    doBarAction->setShortcut(QKeySequence(ConfigManager::instance().shortcuts().value("toggle_do_bar").toString()));
-    addAction(doBarAction);
-    connect(doBarAction, &QAction::triggered, this, &MainWindow::toggleDoBar);
+    addShortcut("toggle_do_bar", &MainWindow::toggleDoBar);
+    addShortcut("toggle_status_bar", &MainWindow::toggleStatusBar);
+    addShortcut("toggle_tab_bar", &MainWindow::toggleTabBar);
+    addShortcut("quit", [this](){ QApplication::instance()->quit(); });
+    addShortcut("new_tab", [this](){ handleCommand("!!!tn"); });
+    addShortcut("about", &MainWindow::showAboutDialog);
 
-    QAction *statusBarAction = new QAction(this);
-    statusBarAction->setShortcut(QKeySequence(ConfigManager::instance().shortcuts().value("toggle_status_bar").toString()));
-    addAction(statusBarAction);
-    connect(statusBarAction, &QAction::triggered, this, [this](){
-        m_statusBar->setVisible(!m_statusBar->isVisible());
-    });
-    
-    QAction *aboutAction = new QAction(this);
-    aboutAction->setShortcut(QKeySequence(ConfigManager::instance().shortcuts().value("about").toString()));
-    addAction(aboutAction);
-    connect(aboutAction, &QAction::triggered, this, &MainWindow::showAboutDialog);
-
-    // Add standard refresh shortcuts
-    QAction *refreshAction = new QAction(this);
-    refreshAction->setShortcuts({QKeySequence(Qt::Key_F5), QKeySequence(Qt::CTRL | Qt::Key_R)});
-    addAction(refreshAction);
-    connect(refreshAction, &QAction::triggered, this, [this](){
-        if (auto webView = currentWebView()) {
-            webView->reload();
+    // Escape hides DoBar
+    QShortcut *esc = new QShortcut(QKeySequence(Qt::Key_Escape), this);
+    connect(esc, &QShortcut::activated, this, [this](){
+        if (m_doBarFrame->isVisible()) {
+            m_doBarFrame->hide();
         }
     });
 
+    // Refresh shortcuts
+    QShortcut *f5 = new QShortcut(QKeySequence(Qt::Key_F5), this);
+    connect(f5, &QShortcut::activated, this, [this](){ if(currentWebView()) currentWebView()->reload(); });
+    QShortcut *ctrlR = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_R), this);
+    connect(ctrlR, &QShortcut::activated, this, [this](){ if(currentWebView()) currentWebView()->reload(); });
 
     connect(m_doBar, &DoBar::commandEntered, this, &MainWindow::handleCommand);
-    connect(m_tabWidget, &QTabWidget::currentChanged, this, &MainWindow::handleTabChanged);
-    connect(m_tabWidget, SIGNAL(countChanged(int)), this, SLOT(updateTabBarVisibility(int)));
+    
+    connect(m_tabWidget, &QTabWidget::currentChanged, m_standaloneTabBar, &QTabBar::setCurrentIndex);
+    connect(m_standaloneTabBar, &QTabBar::currentChanged, m_tabWidget, &QTabWidget::setCurrentIndex);
+    connect(m_standaloneTabBar, &QTabBar::tabCloseRequested, m_tabWidget, &QTabWidget::tabCloseRequested);
 
     connect(m_tabWidget, &QTabWidget::tabCloseRequested, this, [this](int index){
         if (m_tabWidget->count() > 1) {
             m_tabWidget->widget(index)->deleteLater();
             m_tabWidget->removeTab(index);
+            m_standaloneTabBar->removeTab(index);
             updateStatusBar();
+            updateTabBarVisibility(m_tabWidget->count());
         } else {
-            close();
+            QApplication::instance()->quit();
         }
     });
     
@@ -127,15 +126,11 @@ MainWindow::MainWindow(QWebEngineProfile *profile, const QUrl &initialUrl, QWidg
     m_clockTimer->start(1000);
     updateClock();
 
-    handleTabChanged(0);
-    updateStatusBar();
-
     connect(m_profile, &QWebEngineProfile::downloadRequested, this, &MainWindow::handleDownloadRequested);
 }
 
 MainWindow::~MainWindow()
 {
-    qDebug() << "MainWindow destructor called. Application shutting down.";
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event)
@@ -159,31 +154,77 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
     Q_UNUSED(event);
 }
 
-void MainWindow::toggleDoBar()
+void MainWindow::resizeEvent(QResizeEvent *event)
 {
+    QMainWindow::resizeEvent(event);
+    layoutUI();
+}
+
+void MainWindow::layoutUI()
+{
+    // Position DoBar
     if (m_doBarFrame->isVisible()) {
-        m_doBarFrame->hide();
-    } else {
         int barWidth = width() * 0.7;
         if (barWidth > 800) barWidth = 800;
-        m_doBarFrame->setGeometry((width() - barWidth) / 2, 20, barWidth, m_doBarFrame->sizeHint().height());
-        m_doBarFrame->show();
+        m_doBarFrame->setGeometry((width() - barWidth) / 2, 50, barWidth, m_doBarFrame->sizeHint().height());
+    }
+
+    // Position TabBar
+    if (m_standaloneTabBar->isVisible()) {
+        QString pos = ConfigManager::instance().tabBarPosition();
+        int tbHeight = m_standaloneTabBar->sizeHint().height();
+        int y = 0;
+        
+        if (pos == "top") {
+            y = 0;
+        } else { // bottom
+            y = height() - tbHeight;
+            if (m_statusBar->isVisible()) {
+                y -= m_statusBar->height();
+            }
+        }
+        m_standaloneTabBar->setGeometry(0, y, width(), tbHeight);
+        m_standaloneTabBar->raise();
+    }
+}
+
+void MainWindow::toggleDoBar()
+{
+    m_doBarFrame->setVisible(!m_doBarFrame->isVisible());
+    if (m_doBarFrame->isVisible()) {
+        layoutUI();
         m_doBarFrame->raise();
         m_doBar->focusLineEdit();
     }
 }
 
+void MainWindow::toggleStatusBar()
+{
+    m_statusBar->setVisible(!m_statusBar->isVisible());
+    layoutUI();
+}
+
+void MainWindow::toggleTabBar()
+{
+    m_standaloneTabBar->setVisible(!m_standaloneTabBar->isVisible());
+    layoutUI();
+}
+
 void MainWindow::createNewTab(const QUrl& url)
 {
-    QWebEngineView *webView = new QWebEngineView();
+    QWebEngineView *webView = new QWebEngineView(this);
     QWebEnginePage *page = new QWebEnginePage(m_profile, webView);
     webView->setPage(page);
+    
     webView->setUrl(url);
+
     int index = m_tabWidget->addTab(webView, "New Tab");
+    m_standaloneTabBar->addTab("New Tab");
     m_tabWidget->setCurrentIndex(index);
 
     connect(webView, &QWebEngineView::titleChanged, this, [this, index](const QString &title){
         m_tabWidget->setTabText(index, title);
+        m_standaloneTabBar->setTabText(index, title);
     });
 
     connect(webView, &QWebEngineView::urlChanged, this, [this](){ this->updateStatusBar(); });
@@ -196,12 +237,22 @@ void MainWindow::createNewTab(const QUrl& url)
         m_authAttempts.clear();
     });
     connect(page, &QWebEnginePage::authenticationRequired, this, &MainWindow::handleAuthenticationRequired);
+    connect(page, &QWebEnginePage::featurePermissionRequested, this, &MainWindow::onFeaturePermissionRequested);
+    
     updateStatusBar();
+    updateTabBarVisibility(m_tabWidget->count());
+}
+
+void MainWindow::onFeaturePermissionRequested(const QUrl &securityOrigin, QWebEnginePage::Feature feature)
+{
+    qDebug() << "Granting permission for" << feature << "to" << securityOrigin;
+    currentWebView()->page()->setFeaturePermission(securityOrigin, feature, QWebEnginePage::PermissionGrantedByUser);
 }
 
 void MainWindow::updateTabBarVisibility(int count)
 {
-    m_tabWidget->tabBar()->setVisible(count > 1);
+    Q_UNUSED(count);
+    // Standalone bar visibility managed manually
 }
 
 void MainWindow::contextMenuEvent(QContextMenuEvent *event)
@@ -224,6 +275,10 @@ QWebEngineView* MainWindow::currentWebView() const
 
 QUrl MainWindow::prepareUrl(const QString &input)
 {
+    if (input.startsWith("/") || input.startsWith("./") || input.startsWith("../")) {
+        return QUrl::fromLocalFile(QFileInfo(input).absoluteFilePath());
+    }
+    
     QUrl url = QUrl::fromUserInput(input);
     if (ConfigManager::instance().prioritizeHttps() && url.scheme() == "http") {
         url.setScheme("https");
@@ -247,9 +302,7 @@ void MainWindow::handleCommand(const QString &command)
             updateStatusBar();
         } else if (cmd == "tab_close") {
             if (m_tabWidget->count() > 0) {
-                m_tabWidget->widget(m_tabWidget->currentIndex())->deleteLater();
-                m_tabWidget->removeTab(m_tabWidget->currentIndex());
-                updateStatusBar();
+                m_tabWidget->tabCloseRequested(m_tabWidget->currentIndex());
             }
         } else if (cmd == "tab_next") {
             if (m_tabWidget->count() > 0) {
@@ -275,13 +328,10 @@ void MainWindow::handleCommand(const QString &command)
             if(currentWebView()) {
                 currentWebView()->history()->clear();
             }
-            qDebug() << "Current tab's history cleared.";
         } else if (cmd == "clear_cookies") {
             m_profile->cookieStore()->deleteAllCookies();
-            qDebug() << "All cookies cleared.";
         } else if (cmd == "clear_cache") {
             m_profile->clearHttpCache();
-            qDebug() << "HTTP cache cleared.";
         }
         else {
             qDebug() << "Unknown internal command:" << cmd;
@@ -292,8 +342,6 @@ void MainWindow::handleCommand(const QString &command)
         QString url = ConfigManager::instance().doubleBangs().value(bookmark).toString();
         if (!url.isEmpty()) {
             currentWebView()->setUrl(prepareUrl(url));
-        } else {
-            qDebug() << "Unknown bookmark:" << bookmark;
         }
 
     } else if (command.startsWith("!")) {
@@ -305,8 +353,6 @@ void MainWindow::handleCommand(const QString &command)
         if (!urlTemplate.isEmpty()) {
             urlTemplate.replace("%s", query);
             currentWebView()->setUrl(prepareUrl(urlTemplate));
-        } else {
-            qDebug() << "Unknown bang:" << bang;
         }
 
     } else {
@@ -317,6 +363,7 @@ void MainWindow::handleCommand(const QString &command)
 void MainWindow::handleTabChanged(int index)
 {
     m_loadProgress = 100;
+    m_standaloneTabBar->setCurrentIndex(index);
     updateStatusBar();
 }
 
@@ -351,13 +398,6 @@ void MainWindow::handleLoadProgress(int progress)
 
 void MainWindow::handleShortcut(const QString &commandName)
 {
-    if (commandName == "quit") {
-        handleCommand("!!!q");
-    } else if (commandName == "new_tab") {
-        handleCommand("!!!tn");
-    } else if (commandName == "about") {
-        showAboutDialog();
-    }
 }
 
 void MainWindow::showAboutDialog()
@@ -388,12 +428,10 @@ void MainWindow::handleDownloadRequested(QWebEngineDownloadRequest *download)
 
     if (selectedFile.isEmpty()) {
         download->cancel();
-        qDebug() << "Download cancelled by user.";
     } else {
         download->setDownloadDirectory(QFileInfo(selectedFile).path());
         download->setDownloadFileName(QFileInfo(selectedFile).fileName());
         download->accept();
-        qDebug() << "Download accepted to:" << selectedFile;
     }
 }
 
@@ -401,7 +439,6 @@ void MainWindow::handleAuthenticationRequired(const QUrl &requestUrl, QAuthentic
 {
     const QString host = requestUrl.host();
     if (m_cancelledAuthHosts.contains(host)) {
-        qDebug() << "Authentication for" << host << "already cancelled. Denying.";
         return;
     }
 
@@ -416,7 +453,6 @@ void MainWindow::handleAuthenticationRequired(const QUrl &requestUrl, QAuthentic
         authenticator->setPassword(authDialog.password());
         m_authAttempts[host]++;
     } else {
-        qDebug() << "Authentication cancelled by user for" << host;
         m_cancelledAuthHosts.insert(host);
         m_authAttempts.remove(host);
     }

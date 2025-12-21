@@ -1,14 +1,80 @@
 {
-    "start_page": "https://www.google.com",
+    "start_page": "https://boop.no/",
     "default_search_engine": "g",
     "website_color_scheme": "dark",
-    "statusbar_visible_by_default": false,
+    "statusbar_visible_by_default": true,
+    "tabbar_visible_by_default": true,
+    "tabbar_position": "bottom",
     "clock_format": "yyyy-MM-dd HH:mm",
     "downloads_path": "~/Downloads",
     "prioritize_https": true,
     "chromium_flags": [
         "--force-dark-mode"
     ],
+    "theme": {
+        "global": {
+            "font_family": "DejaVu Sans",
+            "font_size": 14,
+            "background": "#1a1d21cc",
+            "text": "#ffc30b",
+            "border_size": 1,
+            "border_color": "#eaa31f"
+        },
+        "statusbar": {
+            "background": "#333333",
+            "text": "#ffc30b",
+            "border_size": 1,
+            "border_color": "#eaa31f"
+        },
+        "tabbar": {
+            "background": "#2c2f3300",
+            "border_size": 1,
+            "border_color": "#eaa31f",
+            "active": {
+                "background": "#333333",
+                "text": "#ffc30b",
+                "border_top": "#ffc30b",
+                "border_bottom": "#333333",
+                "border_left": "#eaa31f",
+                "border_right": "#eaa31f"
+            },
+            "inactive": {
+                "background": "transparent",
+                "text": "#666666",
+                "border_top": "transparent",
+                "border_bottom": "transparent",
+                "border_left": "transparent",
+                "border_right": "#eaa31f"
+            }
+        },
+        "do_bar": {
+            "outer_background": "#333333",
+            "outer_border": "#eaa31f",
+            "outer_border_size": 2,
+            "input_background": "#1a1d21",
+            "input_border": "#eaa31f",
+            "input_text": "#ffc30b",
+            "button_background": "#eaa31f",
+            "button_text": "#1a1d21"
+        },
+        "menu": {
+            "background": "#333333",
+            "border": "#eaa31f",
+            "text": "#ffc30b",
+            "selected_background": "#eaa31f",
+            "selected_text": "#1a1d21"
+        },
+        "dialogs": {
+            "background": "#333333",
+            "text": "#ffc30b",
+            "link": "#ffffff",
+            "border_size": 2,
+            "border_color": "#ffc30b",
+            "button_background": "#eaa31f",
+            "button_text": "#1a1d21",
+            "error_text": "#d72638"
+        }
+    },
     "!bangs": {
         "g": "https://www.google.com/search?q=%s",
         "ddg": "https://duckduckgo.com/?q=%s",
@@ -16,7 +82,8 @@
     },
     "!!bangs": {
         "gh": "https://github.com",
-        "qt": "https://doc.qt.io/"
+        "qt": "https://doc.qt.io/",
+        "home": "https://dash.boop.no/"
     },
     "!!!bangs": {
         "q": "quit",
@@ -36,6 +103,7 @@
     "shortcuts": {
         "toggle_do_bar": "Ctrl+D",
         "toggle_status_bar": "Ctrl+S",
+        "toggle_tab_bar": "Ctrl+B",
         "quit": "Ctrl+Q",
         "new_tab": "Ctrl+T",
         "about": "Ctrl+Shift+A"

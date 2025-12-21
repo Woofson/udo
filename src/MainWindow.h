@@ -10,6 +10,7 @@
 #include <QUrl>
 #include <QAuthenticator>
 #include <QWebEngineDownloadRequest>
+#include <QWebEnginePage> // Include for Feature enum
 #include <QSet>
 #include <QMap>
 #include <QString>
@@ -17,6 +18,7 @@
 // Forward declarations
 class QWebEngineProfile;
 class QTabWidget;
+class QTabBar;
 class QWebEngineView;
 class DoBar;
 class QStatusBar;
@@ -35,10 +37,13 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private slots:
     void updateTabBarVisibility(int count);
     void toggleDoBar();
+    void toggleStatusBar();
+    void toggleTabBar();
     void handleCommand(const QString &command);
     void updateStatusBar(int count = 0);
     void handleTabChanged(int index);
@@ -49,15 +54,18 @@ private slots:
     void updateClock();
     void handleDownloadRequested(QWebEngineDownloadRequest *download);
     void handleAuthenticationRequired(const QUrl &requestUrl, QAuthenticator *authenticator);
+    void onFeaturePermissionRequested(const QUrl &securityOrigin, QWebEnginePage::Feature feature);
 
 private:
     void createNewTab(const QUrl& url);
     QWebEngineView* currentWebView() const;
     QUrl prepareUrl(const QString &input);
+    void layoutUI();
 
     // Member Variables
     QWebEngineProfile *m_profile;
     QTabWidget *m_tabWidget;
+    QTabBar *m_standaloneTabBar;
     DoBar *m_doBar;
     QFrame *m_doBarFrame;
     QStatusBar *m_statusBar;

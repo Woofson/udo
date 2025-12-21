@@ -5,9 +5,10 @@
 #include <QDebug>
 #include <QStandardPaths>
 #include <QDir>
-#include <QCoreApplication> // For QCoreApplication::applicationDirPath()
+#include <QFileInfo>
+#include <QCoreApplication>
 
-QString ConfigManager::s_customConfigPath; // Initialize static member
+QString ConfigManager::s_customConfigPath;
 
 ConfigManager& ConfigManager::instance()
 {
@@ -26,15 +27,12 @@ ConfigManager::~ConfigManager()
 
 void ConfigManager::load()
 {
-    // Ensure the config directory exists
     ensureConfigDirectoryExists();
 
     QString appConfigPath = configFilePath();
     QFile configFile(appConfigPath);
 
-    // If config file doesn't exist, copy the default one
     if (!configFile.exists()) {
-        qDebug() << "Config file not found at" << appConfigPath << ". Copying default.";
         copyDefaultConfig();
     }
 
@@ -72,40 +70,40 @@ void ConfigManager::setCustomConfigPath(const QString &path)
 
 void ConfigManager::ensureConfigDirectoryExists() const
 {
-    QString configDir;
-    if (!s_customConfigPath.isEmpty()) {
-        configDir = s_customConfigPath;
-    } else {
-        configDir = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
-    }
-    QDir dir(configDir);
+    QString path = configFilePath();
+    QFileInfo fi(path);
+    QDir dir = fi.absoluteDir();
     if (!dir.exists()) {
-        qDebug() << "Config directory does not exist. Attempting to create:" << configDir;
-        if (!dir.mkpath(".")) { // Create the directory if it doesn't exist
-            qWarning() << "Failed to create config directory:" << configDir;
-        } else {
-            qDebug() << "Config directory created:" << configDir;
+        qDebug() << "Creating config directory:" << dir.absolutePath();
+        if (!dir.mkpath(".")) {
+            qWarning() << "Failed to create directory:" << dir.absolutePath();
         }
-    } else {
-        qDebug() << "Config directory already exists:" << configDir;
     }
 }
 
 void ConfigManager::copyDefaultConfig() const
 {
-    QFile defaultConfigFile(":/config/config.json"); // Use embedded resource
+    QString resourcePath = ":/config/config.json";
+    QFile defaultConfigFile(resourcePath); 
+    
     if (!defaultConfigFile.exists()) {
-        qWarning() << "Default config.json resource not found. Cannot copy.";
+        qWarning() << "Default config resource not found:" << resourcePath;
+        // Fallback to local file for development
+        defaultConfigFile.setFileName("config.json");
+    }
+
+    if (!defaultConfigFile.exists()) {
+        qWarning() << "Could not find default config template anywhere.";
         return;
     }
 
     QString appConfigPath = configFilePath();
-    qDebug() << "Attempting to copy default config from resource to" << appConfigPath;
-    if (!defaultConfigFile.copy(appConfigPath)) {
-        qWarning() << "Failed to copy default config.json to" << appConfigPath;
-    }
-    else {
-        qDebug() << "Default config.json copied successfully to" << appConfigPath;
+    qDebug() << "Copying default config to:" << appConfigPath;
+    
+    if (defaultConfigFile.copy(appConfigPath)) {
+        QFile::setPermissions(appConfigPath, QFile::ReadOwner | QFile::WriteOwner | QFile::ReadUser | QFile::WriteUser);
+    } else {
+        qWarning() << "Failed to copy default config:" << defaultConfigFile.errorString();
     }
 }
 
@@ -149,6 +147,16 @@ bool ConfigManager::statusBarVisibleByDefault() const
     return m_config["statusbar_visible_by_default"].toBool(true);
 }
 
+bool ConfigManager::tabBarVisibleByDefault() const
+{
+    return m_config["tabbar_visible_by_default"].toBool(false);
+}
+
+QString ConfigManager::tabBarPosition() const
+{
+    return m_config["tabbar_position"].toString("bottom");
+}
+
 QString ConfigManager::clockFormat() const
 {
     return m_config["clock_format"].toString("yyyy-MM-dd HH:mm");
@@ -160,7 +168,10 @@ QString ConfigManager::downloadsPath() const
     if (path.isEmpty() || path == "~") {
         return QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
     }
-    return path.replace("~", QDir::homePath());
+    if (path.startsWith("~/")) {
+        path.replace(0, 1, QDir::homePath());
+    }
+    return path;
 }
 
 bool ConfigManager::prioritizeHttps() const
@@ -176,4 +187,49 @@ QStringList ConfigManager::chromiumFlags() const
         flags.append(value.toString());
     }
     return flags;
+}
+
+QJsonObject ConfigManager::getThemeModule(const QString &module) const
+{
+    return m_config["theme"].toObject()[module].toObject();
+}
+
+QString ConfigManager::getThemeValue(const QString &module, const QString &key, const QString &defaultValue) const
+{
+    QJsonObject mod = getThemeModule(module);
+    if (mod.contains(key)) {
+        return mod[key].toString();
+    }
+    // Fallback to global
+    QJsonObject global = getThemeModule("global");
+    if (global.contains(key)) {
+        return global[key].toString();
+    }
+    return defaultValue;
+}
+
+QString ConfigManager::getThemeSubValue(const QString &module, const QString &subModule, const QString &key, const QString &defaultValue) const
+{
+    QJsonObject mod = getThemeModule(module);
+    if (mod.contains(subModule)) {
+        QJsonObject sub = mod[subModule].toObject();
+        if (sub.contains(key)) {
+            return sub[key].toString();
+        }
+    }
+    return getThemeValue(module, key, defaultValue);
+}
+
+int ConfigManager::getThemeInt(const QString &module, const QString &key, int defaultValue) const
+{
+    QJsonObject mod = getThemeModule(module);
+    if (mod.contains(key)) {
+        return mod[key].toInt();
+    }
+    // Fallback to global
+    QJsonObject global = getThemeModule("global");
+    if (global.contains(key)) {
+        return global[key].toInt();
+    }
+    return defaultValue;
 }
