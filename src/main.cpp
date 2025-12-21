@@ -56,10 +56,13 @@ QString generateStyleSheet()
 {
     const ConfigManager &cfg = ConfigManager::instance();
     
-    QString fontFamily = cfg.getThemeValue("global", "font_family", "DejaVu Sans");
-    int fontSize = cfg.getThemeInt("global", "font_size", 14);
+    // Global
+    QString globalFont = cfg.getThemeValue("global", "font_family", "DejaVu Sans");
+    int globalFontSize = cfg.getThemeInt("global", "font_size", 14);
     int globalBorderSize = cfg.getThemeInt("global", "border_size", 1);
     QString globalBorderColor = cfg.getThemeValue("global", "border_color", "#eaa31f");
+    QString globalBg = cfg.getThemeValue("global", "background", "#1a1d21cc");
+    QString globalText = cfg.getThemeValue("global", "text", "#ffc30b");
     
     // Statusbar
     QString sbBg = cfg.getThemeValue("statusbar", "background", "#2c2f33cc");
@@ -113,29 +116,35 @@ QString generateStyleSheet()
 
     QString qss = R"(
         * {
-            font-family: "@FONT_FAMILY@";
-            font-size: @FONT_SIZE@px;
+            font-family: "@GLOBAL_FONT@";
+            font-size: @GLOBAL_FONT_SIZE@px;
+            color: @GLOBAL_TEXT_COLOR@;
         }
         QMainWindow {
             background-color: transparent;
             border: none;
         }
-        QTabWidget::pane {
-            border: @GLOBAL_BORDER_SIZE@px solid @GLOBAL_BORDER_COLOR@;
+        QTabWidget {
+            border: none;
             background-color: transparent;
         }
+        QTabWidget::pane {
+            border: @GLOBAL_BORDER_SIZE@px solid @GLOBAL_BORDER_COLOR@;
+            background-color: @GLOBAL_BG_COLOR@;
+        }
         QStatusBar {
-            background-color: @SB_BG@;
-            color: @SB_TEXT@;
+            background-color: @SB_BG_COLOR@;
+            color: @SB_TEXT_COLOR@;
             border-top: @SB_BORDER_SIZE@px solid @SB_BORDER_COLOR@;
             border-bottom: none; border-left: none; border-right: none;
         }
         QStatusBar QLabel {
-            color: @SB_TEXT@;
+            color: @SB_TEXT_COLOR@;
         }
         QTabBar {
-            background-color: @TB_BG@;
+            background-color: @TB_BG_COLOR@;
             border: @TB_MAIN_BORDER_SIZE@px solid @TB_MAIN_BORDER_COLOR@;
+            qproperty-drawBase: 0;
         }
         QTabBar::tab {
             background-color: @TB_IN_BG@;
@@ -155,18 +164,8 @@ QString generateStyleSheet()
             border-right: 1px solid @TB_ACT_BR@;
         }
         QTabBar::close-button {
-            image: none;
             subcontrol-origin: padding;
             subcontrol-position: right;
-        }
-        QTabBar::close-button:after {
-            content: "X";
-            color: @TB_IN_TEXT@;
-            font-weight: bold;
-            padding-right: 5px;
-        }
-        QTabBar::tab:selected QTabBar::close-button:after {
-            color: @TB_ACT_TEXT@;
         }
 
         #doBarFrame {
@@ -214,17 +213,19 @@ QString generateStyleSheet()
         }
     )";
 
-    qss.replace("@FONT_FAMILY@", fontFamily);
-    qss.replace("@FONT_SIZE@", QString::number(fontSize));
+    qss.replace("@GLOBAL_FONT@", globalFont);
+    qss.replace("@GLOBAL_FONT_SIZE@", QString::number(globalFontSize));
+    qss.replace("@GLOBAL_TEXT_COLOR@", globalText);
+    qss.replace("@GLOBAL_BG_COLOR@", globalBg);
     qss.replace("@GLOBAL_BORDER_SIZE@", QString::number(globalBorderSize));
     qss.replace("@GLOBAL_BORDER_COLOR@", globalBorderColor);
     
-    qss.replace("@SB_BG@", sbBg);
-    qss.replace("@SB_TEXT@", sbText);
+    qss.replace("@SB_BG_COLOR@", sbBg);
+    qss.replace("@SB_TEXT_COLOR@", sbText);
     qss.replace("@SB_BORDER_SIZE@", QString::number(sbBorderSize));
     qss.replace("@SB_BORDER_COLOR@", sbBorderColor);
     
-    qss.replace("@TB_BG@", tbBg);
+    qss.replace("@TB_BG_COLOR@", tbBg);
     qss.replace("@TB_MAIN_BORDER_SIZE@", QString::number(tbMainBorderSize));
     qss.replace("@TB_MAIN_BORDER_COLOR@", tbMainBorderColor);
     
