@@ -25,12 +25,17 @@
 #include <QFileInfo>
 #include <QAuthenticator>
 
+#include <QIcon>
+
 MainWindow::MainWindow(QWebEngineProfile *profile, const QUrl &initialUrl, QWidget *parent)
     : QMainWindow(parent), m_profile(profile)
 {
     m_loadProgress = 100;
     setWindowFlags(Qt::FramelessWindowHint);
     setAttribute(Qt::WA_TranslucentBackground);
+    
+    // Set window icon from resource
+    setWindowIcon(QIcon(":/assets/assets/icon.png"));
 
     m_tabWidget = new QTabWidget(this);
     m_tabWidget->setTabsClosable(true);

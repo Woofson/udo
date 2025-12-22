@@ -7,7 +7,6 @@
 #include <QSvgWidget>
 #include <QFile>
 #include <QPixmap>
-#include <QDir>
 #include <QTextEdit>
 
 AboutDialog::AboutDialog(QWidget *parent)
@@ -18,31 +17,17 @@ AboutDialog::AboutDialog(QWidget *parent)
 
     QVBoxLayout *layout = new QVBoxLayout(this);
 
-    // --- Icon ---
+    // --- Icon from Resource ---
     QWidget *iconWidget = nullptr;
-    QStringList searchPaths;
-    searchPaths << QCoreApplication::applicationDirPath() + "/assets/"
-                << QDir::currentPath() + "/assets/"
-                << QDir::currentPath() + "/../assets/";
-
-    QString foundPath;
-    for (const QString &path : searchPaths) {
-        if (QFile::exists(path + "icon.svg") || QFile::exists(path + "icon.png")) {
-            foundPath = path;
-            break;
-        }
-    }
-
-    if (!foundPath.isEmpty()) {
-        if (QFile::exists(foundPath + "icon.svg")) {
-            QSvgWidget *svg = new QSvgWidget(foundPath + "icon.svg", this);
-            svg->setFixedSize(96, 96);
-            iconWidget = svg;
-        } else {
-            QLabel *png = new QLabel(this);
-            png->setPixmap(QPixmap(foundPath + "icon.png").scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-            iconWidget = png;
-        }
+    
+    if (QFile::exists(":/assets/assets/icon.svg")) {
+        QSvgWidget *svg = new QSvgWidget(":/assets/assets/icon.svg", this);
+        svg->setFixedSize(96, 96);
+        iconWidget = svg;
+    } else if (QFile::exists(":/assets/assets/icon.png")) {
+        QLabel *png = new QLabel(this);
+        png->setPixmap(QPixmap(":/assets/assets/icon.png").scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        iconWidget = png;
     }
 
     if (iconWidget) {
@@ -74,20 +59,20 @@ AboutDialog::AboutDialog(QWidget *parent)
     QTextEdit *releaseLog = new QTextEdit(this);
     releaseLog->setReadOnly(true);
     QString logText = R"(
+        <h3>v2.0.3</h3>
+        <ul>
+            <li><b>Theme Refinement:</b> Fixed Do!-bar borders, button text, and menu highlighting.</li>
+            <li><b>Tab Bar Fix:</b> Eliminated the white bar at the bottom of the tab bar.</li>
+            <li><b>Standalone Binary:</b> Icons and default config are now fully embedded as resources.</li>
+            <li><b>Portability:</b> Improved asset loading for better standalone performance.</li>
+        </ul>
         <h3>v2.0.2</h3>
         <ul>
-            <li><b>Rebranding:</b> Application renamed to µDo!</li>
-            <li><b>Portability:</b> Binary is now more standalone; assets and default config embedded as resources.</li>
-            <li><b>Modular Theme:</b> Fully customizable colors, fonts, borders, and transparency via config.json.</li>
-            <li><b>Fixed Persistent Storage:</b> Cookies and login sessions are now reliably saved.</li>
-            <li><b>Configurable Chromium Flags:</b> Control engine-level features directly from the config file.</li>
-            <li><b>Standalone Tab Bar:</b> Highly configurable tab bar, styled to match the status bar.</li>
-            <li><b>Downloads:</b> Added "Save As..." dialog and configurable download path.</li>
-            <li><b>HTTP Auth:</b> Improved authentication dialog with error feedback and special character support.</li>
-            <li><b>Prioritize HTTPS:</b> New setting to automatically attempt HTTPS connections.</li>
-            <li><b>Local Content:</b> Support for loading local files, PDFs, and images.</li>
-            <li><b>Command Line:</b> Launch directly to a URL or specify a custom config directory.</li>
-            <li><b>Keyboard Shortcuts:</b> Added standard refresh shortcuts (F5, Ctrl+R) and Escape to hide bar.</li>
+            <li><b>Rebranding:</b> Application renamed to µDo!.</li>
+            <li><b>Modular Theme:</b> Fully customizable via config.json.</li>
+            <li><b>Standalone Tab Bar:</b> Highly configurable bar, styled to match status bar.</li>
+            <li><b>Downloads:</b> Added "Save As..." dialog and configurable path.</li>
+            <li><b>HTTP Auth:</b> Improved dialog with error feedback and special character support.</li>
         </ul>
     )";
     releaseLog->setHtml(logText);

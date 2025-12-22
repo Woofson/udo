@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=µDo!
+Comment=Minimalist command-driven web browser
+Exec=udo %u
+Icon=udo
+Terminal=false
+Type=Application
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;application/xml;x-scheme-handler/http;x-scheme-handler/https;
+StartupWMClass=udo
+Keywords=browser;minimalist;command;

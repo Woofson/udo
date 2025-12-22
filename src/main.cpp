@@ -17,7 +17,7 @@
 void preFlightSetup(int argc, char *argv[], QString &outPersistentStoragePath, QUrl &outInitialUrl)
 {
     QCoreApplication::setApplicationName("udo");
-    QCoreApplication::setApplicationVersion("2.0.2");
+    QCoreApplication::setApplicationVersion("2.0.3");
 
     QString customConfigPath;
     for (int i = 1; i < argc; ++i) {
@@ -270,7 +270,7 @@ int main(int argc, char *argv[])
     QUrl initialUrl;
     
     QCoreApplication::setApplicationName("udo");
-    QCoreApplication::setApplicationVersion("2.0.2");
+    QCoreApplication::setApplicationVersion("2.0.3");
 
     preFlightSetup(argc, argv, persistentStoragePath, initialUrl);
 

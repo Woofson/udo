@@ -2,4 +2,8 @@
     <qresource prefix="/config">
         <file>config.json</file>
     </qresource>
+    <qresource prefix="/assets">
+        <file>assets/icon.png</file>
+        <file>assets/icon.svg</file>
+    </qresource>
 </RCC>

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(udo VERSION 2.0.2
-        DESCRIPTION "µDo! 2.0.2 - A minimalist, command-driven web browser by Tintin (github.com/Woofson/udo)"
+project(udo VERSION 2.0.3
+        DESCRIPTION "µDo! 2.0.3 - A minimalist, command-driven web browser by Tintin (github.com/Woofson/udo)"
         LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -21,3 +21,8 @@ add_custom_command(TARGET udo POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/assets
         $<TARGET_FILE_DIR:udo>/assets)
+
+install(TARGETS udo DESTINATION bin)
+install(FILES udo.desktop DESTINATION share/applications)
+install(FILES assets/icon.svg DESTINATION share/icons/hicolor/scalable/apps RENAME udo.svg)
+install(FILES assets/icon.png DESTINATION share/icons/hicolor/64x64/apps RENAME udo.png)

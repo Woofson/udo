@@ -101,7 +101,7 @@
         "help": "help"
     },
     "shortcuts": {
-        "toggle_do_bar": "Ctrl+D",
+        "toggle_do_bar": "!",
         "toggle_status_bar": "Ctrl+S",
         "toggle_tab_bar": "Ctrl+B",
         "quit": "Ctrl+Q",
