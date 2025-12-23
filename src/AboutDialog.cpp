@@ -59,6 +59,11 @@ AboutDialog::AboutDialog(QWidget *parent)
     QTextEdit *releaseLog = new QTextEdit(this);
     releaseLog->setReadOnly(true);
     QString logText = R"(
+        <h3>v2.0.4</h3>
+        <ul>
+            <li><b>Notifications:</b> Added Desktop Notification support via D-Bus.</li>
+            <li><b>Downloads:</b> Get notified when downloads complete or fail (works with mako/dunst).</li>
+        </ul>
         <h3>v2.0.3</h3>
         <ul>
             <li><b>Theme Refinement:</b> Fixed Do!-bar borders, button text, and menu highlighting.</li>

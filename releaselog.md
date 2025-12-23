@@ -1,5 +1,15 @@
 # µDo! Release Log
 
+## v2.0.4
+**Release Date: 2025-12-23**
+
+### Desktop Notifications (D-Bus)
+- **Notification Support:** Added integration with `org.freedesktop.Notifications` (D-Bus).
+- **Download Alerts:** µDo! now sends desktop notifications when a download completes or fails, compatible with notification daemons like `mako` or `dunst`.
+- **System Integration:** Removed single-instance restriction to allow multiple independent browser sessions/profiles.
+
+---
+
 ## v2.0.3
 **Release Date: 2025-12-17**
 

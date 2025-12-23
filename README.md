@@ -1,4 +1,4 @@
-# µDo! v2.0.3
+# µDo! v2.0.4
 
 A minimalist, command-driven web browser by Tintin (github.com/Woofson/udo).
 

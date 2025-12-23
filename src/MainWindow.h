@@ -61,6 +61,7 @@ private:
     QWebEngineView* currentWebView() const;
     QUrl prepareUrl(const QString &input);
     void layoutUI();
+    void sendNotification(const QString &title, const QString &body);
 
     // Member Variables
     QWebEngineProfile *m_profile;

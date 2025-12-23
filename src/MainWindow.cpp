@@ -406,6 +406,9 @@ void MainWindow::updateClock()
     m_statusClock->setText(QDateTime::currentDateTime().toString(format));
 }
 
+#include <QtDBus/QDBusInterface>
+#include <QtDBus/QDBusMessage>
+
 void MainWindow::handleDownloadRequested(QWebEngineDownloadRequest *download)
 {
     QString defaultPath = ConfigManager::instance().downloadsPath();
@@ -418,6 +421,33 @@ void MainWindow::handleDownloadRequested(QWebEngineDownloadRequest *download)
         download->setDownloadDirectory(QFileInfo(selectedFile).path());
         download->setDownloadFileName(QFileInfo(selectedFile).fileName());
         download->accept();
+
+        // Connect to signals to track progress and completion
+        connect(download, &QWebEngineDownloadRequest::stateChanged, this, [this, download](QWebEngineDownloadRequest::DownloadState state){
+            if (state == QWebEngineDownloadRequest::DownloadCompleted) {
+                sendNotification("Download Complete", QString("Saved to: %1").arg(download->downloadFileName()));
+            } else if (state == QWebEngineDownloadRequest::DownloadInterrupted) {
+                sendNotification("Download Failed", QString("Failed to download: %1").arg(download->downloadFileName()));
+            }
+        });
+    }
+}
+
+void MainWindow::sendNotification(const QString &title, const QString &body)
+{
+    QDBusInterface notificationInterface("org.freedesktop.Notifications", "/org/freedesktop/Notifications", "org.freedesktop.Notifications");
+    if (notificationInterface.isValid()) {
+        QList<QVariant> args;
+        args << "udo" // app_name
+             << (unsigned int)0 // replaces_id
+             << "" // app_icon (can be path to icon)
+             << title // summary
+             << body // body
+             << QStringList() // actions
+             << QVariantMap() // hints
+             << -1; // expire_timeout (-1 = default)
+             
+        notificationInterface.callWithArgumentList(QDBus::AutoDetect, "Notify", args);
     }
 }
 

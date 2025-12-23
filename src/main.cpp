@@ -1,4 +1,7 @@
 #include <QApplication>
+#include <QtDBus/QDBusConnection>
+#include <QtDBus/QDBusInterface>
+#include <QtDBus/QDBusMessage>
 #include "MainWindow.h"
 #include "ConfigManager.h"
 #include <QWebEngineSettings>
@@ -17,7 +20,7 @@
 void preFlightSetup(int argc, char *argv[], QString &outPersistentStoragePath, QUrl &outInitialUrl)
 {
     QCoreApplication::setApplicationName("udo");
-    QCoreApplication::setApplicationVersion("2.0.3");
+    QCoreApplication::setApplicationVersion("2.0.4");
 
     QString customConfigPath;
     for (int i = 1; i < argc; ++i) {
@@ -270,7 +273,7 @@ int main(int argc, char *argv[])
     QUrl initialUrl;
     
     QCoreApplication::setApplicationName("udo");
-    QCoreApplication::setApplicationVersion("2.0.3");
+    QCoreApplication::setApplicationVersion("2.0.4");
 
     preFlightSetup(argc, argv, persistentStoragePath, initialUrl);
 
