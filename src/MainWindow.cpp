@@ -24,7 +24,6 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QAuthenticator>
-
 #include <QIcon>
 
 MainWindow::MainWindow(QWebEngineProfile *profile, const QUrl &initialUrl, QWidget *parent)
@@ -34,7 +33,6 @@ MainWindow::MainWindow(QWebEngineProfile *profile, const QUrl &initialUrl, QWidg
     setWindowFlags(Qt::FramelessWindowHint);
     setAttribute(Qt::WA_TranslucentBackground);
     
-    // Set window icon from resource
     setWindowIcon(QIcon(":/assets/assets/icon.png"));
 
     m_tabWidget = new QTabWidget(this);
@@ -94,7 +92,6 @@ MainWindow::MainWindow(QWebEngineProfile *profile, const QUrl &initialUrl, QWidg
     addShortcut("new_tab", [this](){ handleCommand("!!!tn"); });
     addShortcut("about", &MainWindow::showAboutDialog);
 
-    // Escape hides DoBar
     QShortcut *esc = new QShortcut(QKeySequence(Qt::Key_Escape), this);
     connect(esc, &QShortcut::activated, this, [this](){
         if (m_doBarFrame->isVisible()) {
@@ -102,7 +99,6 @@ MainWindow::MainWindow(QWebEngineProfile *profile, const QUrl &initialUrl, QWidg
         }
     });
 
-    // Refresh shortcuts
     QShortcut *f5 = new QShortcut(QKeySequence(Qt::Key_F5), this);
     connect(f5, &QShortcut::activated, this, [this](){ if(currentWebView()) currentWebView()->reload(); });
     QShortcut *ctrlR = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_R), this);
@@ -141,7 +137,7 @@ MainWindow::~MainWindow()
 void MainWindow::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        m_dragPosition = event->globalPos() - frameGeometry().topLeft();
+        m_dragPosition = event->globalPosition() - frameGeometry().topLeft();
         event->accept();
     }
 }
@@ -149,7 +145,7 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
 {
     if (event->buttons() & Qt::LeftButton) {
-        move(event->globalPos() - m_dragPosition);
+        move((event->globalPosition() - m_dragPosition).toPoint());
         event->accept();
     }
 }
@@ -167,14 +163,12 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 void MainWindow::layoutUI()
 {
-    // Position DoBar
     if (m_doBarFrame->isVisible()) {
         int barWidth = width() * 0.7;
         if (barWidth > 800) barWidth = 800;
         m_doBarFrame->setGeometry((width() - barWidth) / 2, 50, barWidth, m_doBarFrame->sizeHint().height());
     }
 
-    // Position TabBar
     if (m_standaloneTabBar->isVisible()) {
         QString pos = ConfigManager::instance().tabBarPosition();
         int tbHeight = m_standaloneTabBar->sizeHint().height();
@@ -182,7 +176,7 @@ void MainWindow::layoutUI()
         
         if (pos == "top") {
             y = 0;
-        } else { // bottom
+        } else {
             y = height() - tbHeight;
             if (m_statusBar->isVisible()) {
                 y -= m_statusBar->height();
@@ -242,22 +236,24 @@ void MainWindow::createNewTab(const QUrl& url)
         m_authAttempts.clear();
     });
     connect(page, &QWebEnginePage::authenticationRequired, this, &MainWindow::handleAuthenticationRequired);
-    connect(page, &QWebEnginePage::featurePermissionRequested, this, &MainWindow::onFeaturePermissionRequested);
+    
+    // Modern Permission API for video calls etc.
+    connect(page, &QWebEnginePage::permissionRequested, this, &MainWindow::onPermissionRequested);
     
     updateStatusBar();
     updateTabBarVisibility(m_tabWidget->count());
 }
 
-void MainWindow::onFeaturePermissionRequested(const QUrl &securityOrigin, QWebEnginePage::Feature feature)
+void MainWindow::onPermissionRequested(QWebEnginePermission permission)
 {
-    qDebug() << "Granting permission for" << feature << "to" << securityOrigin;
-    currentWebView()->page()->setFeaturePermission(securityOrigin, feature, QWebEnginePage::PermissionGrantedByUser);
+    // Auto-grant permissions for video calls (Messenger, Discord, etc.)
+    qDebug() << "Auto-granting permission for:" << permission.permissionType();
+    permission.grant();
 }
 
 void MainWindow::updateTabBarVisibility(int count)
 {
     Q_UNUSED(count);
-    // Standalone bar visibility managed manually
 }
 
 void MainWindow::contextMenuEvent(QContextMenuEvent *event)
@@ -294,8 +290,6 @@ QUrl MainWindow::prepareUrl(const QString &input)
 void MainWindow::handleCommand(const QString &command)
 {
     m_doBarFrame->hide();
-    qDebug() << "Handling command:" << command;
-
     if (command.startsWith("!!!")) {
         QString cmdKey = command.mid(3).trimmed();
         QString cmd = ConfigManager::instance().tripleBangs().value(cmdKey).toString();
@@ -338,28 +332,21 @@ void MainWindow::handleCommand(const QString &command)
         } else if (cmd == "clear_cache") {
             m_profile->clearHttpCache();
         }
-        else {
-            qDebug() << "Unknown internal command:" << cmd;
-        }
-
     } else if (command.startsWith("!!")) {
         QString bookmark = command.mid(2).trimmed();
         QString url = ConfigManager::instance().doubleBangs().value(bookmark).toString();
         if (!url.isEmpty()) {
             currentWebView()->setUrl(prepareUrl(url));
         }
-
     } else if (command.startsWith("!")) {
         QStringList parts = command.split(" ");
         QString bang = parts.first().mid(1);
         QString query = parts.mid(1).join(" ");
         QString urlTemplate = ConfigManager::instance().bangs().value(bang).toString();
-
         if (!urlTemplate.isEmpty()) {
             urlTemplate.replace("%s", query);
             currentWebView()->setUrl(prepareUrl(urlTemplate));
         }
-
     } else {
         currentWebView()->setUrl(prepareUrl(command));
     }
@@ -375,7 +362,6 @@ void MainWindow::handleTabChanged(int index)
 void MainWindow::updateStatusBar(int count)
 {
     Q_UNUSED(count);
-
     QWebEngineView *webView = currentWebView();
     if (webView) {
         if (m_loadProgress < 100) {
@@ -383,15 +369,12 @@ void MainWindow::updateStatusBar(int count)
         } else {
             m_statusUrl->setText(webView->url().toString().left(80));
         }
-        
         bool isSecure = webView->url().scheme() == "https";
         m_statusSecure->setText(isSecure ? "🔒" : "🔓");
-
     } else {
         m_statusUrl->clear();
         m_statusSecure->clear();
     }
-
     m_statusTabs->setText(QString("Tab: %1/%2").arg(m_tabWidget->currentIndex() + 1).arg(m_tabWidget->count()));
 }
 
@@ -427,10 +410,8 @@ void MainWindow::handleDownloadRequested(QWebEngineDownloadRequest *download)
 {
     QString defaultPath = ConfigManager::instance().downloadsPath();
     QString suggestedFileName = download->suggestedFileName();
-
     QString selectedFile = QFileDialog::getSaveFileName(this, tr("Save Download"),
                                                     QDir(defaultPath).filePath(suggestedFileName));
-
     if (selectedFile.isEmpty()) {
         download->cancel();
     } else {
@@ -446,12 +427,10 @@ void MainWindow::handleAuthenticationRequired(const QUrl &requestUrl, QAuthentic
     if (m_cancelledAuthHosts.contains(host)) {
         return;
     }
-
     QString errorMessage;
     if (m_authAttempts.contains(host)) {
         errorMessage = "Invalid credentials. Please try again.";
     }
-
     HttpAuthDialog authDialog(this, host, errorMessage);
     if (authDialog.exec() == QDialog::Accepted) {
         authenticator->setUser(authDialog.username());

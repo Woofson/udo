@@ -10,7 +10,7 @@
 #include <QUrl>
 #include <QAuthenticator>
 #include <QWebEngineDownloadRequest>
-#include <QWebEnginePage> // Include for Feature enum
+#include <QWebEnginePermission> // Modern permission API
 #include <QSet>
 #include <QMap>
 #include <QString>
@@ -54,7 +54,7 @@ private slots:
     void updateClock();
     void handleDownloadRequested(QWebEngineDownloadRequest *download);
     void handleAuthenticationRequired(const QUrl &requestUrl, QAuthenticator *authenticator);
-    void onFeaturePermissionRequested(const QUrl &securityOrigin, QWebEnginePage::Feature feature);
+    void onPermissionRequested(QWebEnginePermission permission); // Updated for modern API
 
 private:
     void createNewTab(const QUrl& url);
@@ -75,7 +75,7 @@ private:
     QLabel *m_statusClock;
     QTimer *m_clockTimer;
     int m_loadProgress;
-    QPoint m_dragPosition;
+    QPointF m_dragPosition; // Use QPointF for modern mouse events
     QMap<QString, int> m_authAttempts;
     QSet<QString> m_cancelledAuthHosts;
 };
